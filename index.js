@@ -4,6 +4,9 @@ const nodemailer = require("nodemailer");
 const env = require("dotenv").config();
 const cors = require("cors");
 const _ = require("lodash");
+const handlebars = require("handlebars");
+const fs = require("fs");
+const path = require("path");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -40,6 +43,40 @@ app.post("/", (req, res) => {
       to: process.env.MAIL_FROM,
       subject: process.env.MAIL_SUBJECT,
       text,
+    };
+
+    transporter.sendMail(mailOptions, (err, data) => {
+      if (err) {
+        res.status(500).json({ message: "Internal Error" });
+      } else {
+        res.status(200).json({ message: "Email sent successfully" });
+      }
+    });
+
+    res.status(200).json({ message: "Email sent successfully" });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.post("/bot-register", (req, res) => {
+  try {
+    const { email, url } = req.body;
+
+    const emailBody = fs
+      .readFileSync(path.join(__dirname, "templates/bot-register.hbs"), "utf8")
+      .toString();
+
+    const compiledTemplate = handlebars.compile(emailBody);
+
+    const html = compiledTemplate({ url });
+
+    const mailOptions = {
+      from: process.env.MAIL_FROM,
+      to: email,
+      subject:
+        "Welcome to the Sourcing & Supply Chain Masterclass for eComm Course by SourciED!",
+      html,
     };
 
     transporter.sendMail(mailOptions, (err, data) => {
