@@ -30,30 +30,34 @@ app.post("/", (req, res) => {
   try {
     const { name, company, email, phoneNumber, message } = req.body;
 
-    const text = `
-    Name: ${name}
-    Company: ${company}
-    Email: ${email}
-    Phone Number: ${phoneNumber}
-    Message: ${message}
-    `;
+    const emailBody = fs
+      .readFileSync(path.join(__dirname, "templates/contact-form.hbs"), "utf8")
+      .toString();
+
+    const compiledTemplate = handlebars.compile(emailBody);
+
+    const html = compiledTemplate({
+      name,
+      company,
+      email,
+      phoneNumber,
+      message,
+    });
 
     const mailOptions = {
       from: process.env.MAIL_FROM,
       to: process.env.MAIL_FROM,
       subject: process.env.MAIL_SUBJECT,
-      text,
+      html,
     };
 
     transporter.sendMail(mailOptions, (err, data) => {
       if (err) {
-        res.status(500).json({ message: "Internal Error" });
+        return res.status(500).json({ message: "Internal Error" });
       } else {
-        res.status(200).json({ message: "Email sent successfully" });
+        return res.status(200).json({ message: "Email sent successfully" });
       }
     });
-
-    res.status(200).json({ message: "Email sent successfully" });
   } catch (error) {
     console.log(error);
   }
