@@ -51,9 +51,7 @@ app.post("/", limiter, async (req, res) => {
     });
 
     if (!mailValid.valid) {
-      return res
-        .status(400)
-        .json({ message: "Invalid email. " + mailValid.reason });
+      return res.status(400).json({ status: 400, message: "Invalid email." });
     }
 
     const emailBody = fs
@@ -79,13 +77,16 @@ app.post("/", limiter, async (req, res) => {
 
     transporter.sendMail(mailOptions, (err, data) => {
       if (err) {
-        return res.status(500).json({ message: "Internal Error" });
+        return res.status(400).json({ status: 400, message: "Internal Error" });
       } else {
-        return res.status(200).json({ message: "Email sent successfully" });
+        return res
+          .status(200)
+          .json({ status: 200, message: "Email sent successfully" });
       }
     });
   } catch (error) {
     console.log(error);
+    return res.status(400).json({ status: 400, message: error.message });
   }
 });
 
