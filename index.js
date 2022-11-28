@@ -7,6 +7,8 @@ const _ = require("lodash");
 const handlebars = require("handlebars");
 const fs = require("fs");
 const path = require("path");
+const rateLimit = require("express-rate-limit");
+const { validate } = require("deep-email-validator");
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -20,15 +22,39 @@ var corsOptions = {
   origin: process.env.CLIENT_URL,
   methods: ["POST"],
   allowedHeaders: ["Content-Type"],
-  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  optionsSuccessStatus: 200,
 };
+
+const limiter = rateLimit({
+  windowMs: 30 * 60 * 1000,
+  max: 1, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipFailedRequests: true,
+  message: "Too many requests, please try again later in 30 minutes.",
+});
 
 app.use(express.json());
 app.use(cors(corsOptions));
 
-app.post("/", (req, res) => {
+app.post("/", limiter, async (req, res) => {
   try {
     const { name, company, email, phoneNumber, message } = req.body;
+
+    const mailValid = await validate({
+      email,
+      validateRegex: true,
+      validateMx: true,
+      validateTypo: false,
+      validateDisposable: true,
+      validateSMTP: false,
+    });
+
+    if (!mailValid.valid) {
+      return res
+        .status(400)
+        .json({ message: "Invalid email. " + mailValid.reason });
+    }
 
     const emailBody = fs
       .readFileSync(path.join(__dirname, "templates/contact-form.hbs"), "utf8")
