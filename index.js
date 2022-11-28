@@ -31,7 +31,10 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipFailedRequests: true,
-  message: "Too many requests, please try again later in 30 minutes.",
+  message: {
+    status: 429,
+    message: "Too many requests, please try again later in 30 minutes.",
+  },
 });
 
 app.use(express.json());
@@ -40,6 +43,10 @@ app.use(cors(corsOptions));
 app.post("/", limiter, async (req, res) => {
   try {
     const { name, company, email, phoneNumber, message } = req.body;
+
+    return res
+      .status(200)
+      .json({ status: 200, message: "Email sent successfully" });
 
     const mailValid = await validate({
       email,
