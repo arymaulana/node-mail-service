@@ -44,10 +44,6 @@ app.post("/", limiter, async (req, res) => {
   try {
     const { name, company, email, phoneNumber, message } = req.body;
 
-    return res
-      .status(200)
-      .json({ status: 200, message: "Email sent successfully" });
-
     const mailValid = await validate({
       email,
       validateRegex: true,
